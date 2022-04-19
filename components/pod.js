@@ -1,11 +1,50 @@
 import Image from 'next/image';
 import Date from './date';
+import { useRouter } from 'next/router'
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 const myLoader = ({ src }) => {
   return src;
 };
 
 export const Pod = ({ pod, languages }) => {
+  const router = useRouter()
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const postId = e.target.postId.value;
+    const createdBy = e.target.createdBy.value;
+    const languageId = e.target.languageId.value;
+    const client = new ApolloClient({
+      uri: apiUrl,
+      cache: new InMemoryCache()
+    });
+  
+    const pods = await client.mutate({
+      mutation: gql`
+        mutation addLanguagePost(
+          $postId: String
+          $languageId: String
+          $createdBy: String
+        ) {
+          addLanguagePost(
+            postId: $postId
+            languageId: $languageId
+            createdBy: $createdBy
+          )
+        }
+      `,
+      variables: {
+        postId: postId,
+        languageId: languageId,
+        createdBy: createdBy
+      }
+    });
+    console.log(pods);
+    router.reload();
+  }
   return (
     <>
       <div className='flex items-center justify-between p-6 space-x-6 border-2 rounded-xl my-3 mx-1'>
@@ -24,9 +63,12 @@ export const Pod = ({ pod, languages }) => {
               <code>audio</code> element.
             </audio>
           </div>
+          <div className='flex pt-2'>
+            <span className="text-sm text-muted">{Date(pod.createdAt)}</span>
+          </div>
         </div>
         <div className='inline-flex pt-4'>
-          <form className='flex-1' action='/api/hello' method='post'>
+          <form className='flex-1' onSubmit={handleSubmit} method='post'>
             <input type='hidden' name='postId' value={pod.id} />
             <input type='hidden' name='createdBy' value={pod.createdBy.id} />
             <select
