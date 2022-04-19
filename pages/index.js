@@ -1,53 +1,66 @@
 import Head from 'next/head';
 import { Pod } from '../components/pod';
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
-
-export async function getServerSideProps() {
+import { useState, useEffect } from 'react';
+export default function Home() {
+  const [limit, setLimit] = useState(10);
+  const [offset, setOffset] = useState(0);
+  const [pods, setPods] = useState([]);
+  const [languages, setLanguages] = useState([]);
+  const [isLoading, setLoading] = useState(false);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  console.log(apiUrl);
   const client = new ApolloClient({
     uri: apiUrl,
     cache: new InMemoryCache()
   });
+  const getData = async () => {
+    setLoading(true);
 
-  const pods = await client.query({
-    query: gql`
-      query getNonLanguageTaggedPosts {
-        getNonLanguageTaggedPosts {
-          id
-          title
-          audioByteUrl
-          createdBy {
+    const pods = await client.query({
+      query: gql`
+        query getNonLanguageTaggedPosts($offset: Int, $limit: Int) {
+          getNonLanguageTaggedPosts(offset: $offset, limit: $limit) {
             id
-            username
+            title
+            audioByteUrl
+            createdBy {
+              id
+              username
+            }
+            createdAt
           }
-          createdAt
         }
+      `,
+      variables: {
+        offset,
+        limit
       }
-    `
-  });
+    });
 
-  const languages = await client.query({
-    query: gql`
-      query languages {
-        languages {
-          id
-          name
-          createdAt
-          updatedAt
+    const languages = await client.query({
+      query: gql`
+        query languages {
+          languages {
+            id
+            name
+            createdAt
+            updatedAt
+          }
         }
-      }
-    `
-  });
-  return {
-    props: {
-      pods: pods.data.getNonLanguageTaggedPosts,
-      languages: languages.data.languages
-    }
+      `
+    });
+
+    return { pods, languages };
   };
-}
-
-export default function Home({ pods, languages }) {
+  useEffect(() => {
+    getData().then((data) => {
+      setPods(data.pods.data.getNonLanguageTaggedPosts);
+      setLanguages(data.languages.data.languages);
+      setLoading(false);
+    });
+  }, [offset, limit]);
+  if (isLoading) return <p>Loading...</p>;
+  if (!languages) return <p>No untagged voicepod found</p>;
   return (
     <div>
       <Head>
@@ -55,7 +68,9 @@ export default function Home({ pods, languages }) {
       </Head>
 
       <main>
-        <label className='mx-auto my-2'>List of voicepods without language tagged.</label>
+        <label className='mx-auto my-2'>
+          List of voicepods without language tagged.
+        </label>
         {pods.map((pod) => (
           <Pod key={pod.id} pod={pod} languages={languages} />
         ))}
