@@ -1,6 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
-const apiUrl = 'http://localhost:3000/graphql';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default async function handler(req, res) {
   const client = new ApolloClient({
