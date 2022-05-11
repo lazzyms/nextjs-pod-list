@@ -2,15 +2,16 @@ import Image from 'next/image';
 import Date from './date';
 import { useRouter } from 'next/router'
 import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
+import { useState } from 'react';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 const myLoader = ({ src }) => {
   return src;
 };
 
-export const Pod = ({ pod, languages }) => {
+export const Pod = ({ pod, languages, removePod }) => {
   const router = useRouter()
-
+  const [hide, setHide] = useState(false);
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -43,10 +44,15 @@ export const Pod = ({ pod, languages }) => {
       }
     });
     console.log(pods);
-    router.reload();
+    if(pods.data.addLanguagePost) {
+      setHide(true)
+      removePod(postId)
+    }
+    // router.reload();
   }
   return (
     <>
+      {!hide && (
       <div className='flex items-center justify-between p-6 space-x-6 border-2 rounded-xl my-3 mx-1'>
         <div className='flex-1'>
           <div className='flex items-center space-x-3'>
@@ -96,6 +102,7 @@ export const Pod = ({ pod, languages }) => {
           </form>
         </div>
       </div>
+      )}
     </>
   );
 };
